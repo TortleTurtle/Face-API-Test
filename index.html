@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Face-Recognition</title>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        img {
+            height: 80vh;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #hiddenImages {
+            display: none;
+        }
+    </style>
+    <script defer src="face-api.min.js"></script>
+    <script defer src="app.js"></script>
+</head>
+<body>
+    <input type="file" id="imageUpload">
+    <div id="hiddenImages">
+        <img src="labeled_images/Coen/1.jpg">
+        <img src="labeled_images/Coen/2.jpg">
+        <img src="labeled_images/Coen/3.jpg">
+        <img src="labeled_images/Coen/4.jpg">
+        <img src="labeled_images/Daan/1.jpg">
+        <img src="labeled_images/Daan/2.jpg">
+        <img src="labeled_images/Daan/3.jpg">
+        <img src="labeled_images/Daan/4.jpg">
+    </div>
+</body>
+</html>
