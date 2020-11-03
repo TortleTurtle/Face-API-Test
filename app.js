@@ -1,87 +1,87 @@
-imageUpload = document.getElementById("imageUpload");
+videoInput = document.getElementById("videoInput");
 
 window.addEventListener('load', () =>{
 	Promise.all([
+		faceapi.nets.tinyFaceDetector.loadFromUri("./models"),
 		faceapi.nets.faceRecognitionNet.loadFromUri("./models"),
 		faceapi.nets.faceLandmark68Net.loadFromUri("./models"),
-		faceapi.nets.ssdMobilenetv1.loadFromUri("./models"),
+		faceapi.nets.ssdMobilenetv1.loadFromUri("./models")
 	]).then(start);
 });
 
 async function start () {
-	console.log("Loaded!");
-
-	//create containter to hold image and canvas
-	const container = document.createElement('div');
-	container.style.position = "relative";
-	document.body.append(container);
-
-	//variables to store image and canvas
-	let image
-	let canvas
+	console.log("Loaded models");
 
 	//load labeled images for face recognition
+	console.log('loading reference images');
 	const labeledFaceDescriptors = await loadLabeledImages();
 	const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6); //60%
 
-	imageUpload.addEventListener('change', async () => {
-		//clear image and canvas if already exists to clean up the page.
-		if (image) image.remove();
-		if (canvas) canvas.remove();
+	await startVideo();
 
-		//buffer uploaded image and append to container.
-		console.log("Buffering Image")
-		image = await faceapi.bufferToImage(imageUpload.files[0]);
-		console.log("Done!");
-		container.append(image);
-
-		//create canvas, resize to image and append to container.
-		canvas = faceapi.createCanvasFromMedia(image);
-		container.append(canvas);
-		const displaySize = { width: image.width, height: image.height };
+	videoInput.addEventListener('play', () => {
+		//create a canvas to display detections
+		const canvas = faceapi.createCanvasFromMedia(videoInput);
+		document.body.append(canvas);
+		const displaySize = {width: videoInput.width, height: videoInput.height }
 		faceapi.matchDimensions(canvas, displaySize);
 
-		//get detections
-		const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors();
-		const resizedDetections = faceapi.resizeResults(detections, displaySize);
-		const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor))
+		//set an interval to check for detections
+		setInterval( async () => {
+			//detect all faces. Using TinyFace because its more light weight.
+			const detections = await faceapi.detectAllFaces(videoInput, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+			const resizedDetections = faceapi.resizeResults(detections, displaySize);
+			//find the best match for the detected faces.
+			const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor));
 
-		//draw detections
-		results.forEach((result, i) => {
-			const box = resizedDetections[i].detection.box;
-			const drawBox = new faceapi.draw.DrawBox(box, {label: result.toString()});
-			drawBox.draw(canvas);
-		});
-		console.log(detections.length);
+			//clear canvas to display new detections.
+			canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+			//draw results
+			results.forEach((result, i) => {
+				const box = resizedDetections[i].detection.box;
+				const drawBox = new faceapi.draw.DrawBox(box, {label: result.toString()});
+				drawBox.draw(canvas);
+			});
+		}, 100) // 1/10th of a second.
 	});
 }
 
 function loadLabeledImages() {
-	//labels for images
+	//labels for images. These need to correspond with the folder names where the training images are stored.
 	const labels = ['Coen', 'Daan'];
-	// const labels = ['Black Widow', 'Captain America', 'Captain Marvel', 'Hawkeye', 'Jim Rhodes', 'Thor', 'Tony Stark'];
 
 	return Promise.all(
 		//map labels and match with corresponding descriptors.
 		labels.map(async label => {
 			const descriptions = [];
 
-			//Huisgenoten
 			for (let i = 1; i <= 4; i++) {
+				//using npm live-server to host files locally.
 				const img = await faceapi.fetchImage(`http://127.0.0.1:8080/labeled_images//${label}/${i}.jpg`);
 				const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
 				console.log(detections);
 				descriptions.push(detections.descriptor);
 			}
 
-			//Avengers
-			// for (let i = 1; i <= 2; i++){
-			// 	const img = await faceapi.fetchImage(`https://raw.githubusercontent.com/WebDevSimplified/Face-Recognition-JavaScript/master/labeled_images/${label}/${i}.jpg`);
-			// 	const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-			// 	console.log(detections);
-			// 	descriptions.push(detections.descriptor);
-			// }
 			return new faceapi.LabeledFaceDescriptors(label, descriptions);
 		})
-	)
+	);
+}
+
+async function startVideo() {
+	//get access to camera and link it to video element.
+	const constraints = {
+		audio: false,
+		video: {
+			width: videoInput.width,
+			height: videoInput.height
+		}
+	}
+
+	try {
+		stream = await navigator.mediaDevices.getUserMedia(constraints);
+		videoInput.srcObject = stream;
+	} catch (err) {
+		console.error(err);
+	}
 }

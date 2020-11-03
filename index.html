@@ -14,19 +14,14 @@
             align-items: center;
             flex-direction: column;
         }
-        img {
-            height: 80vh;
-        }
         canvas {
             position: absolute;
-            top: 0;
-            left: 0;
         }
     </style>
     <script defer src="face-api.min.js"></script>
     <script defer src="app.js"></script>
 </head>
 <body>
-    <input type="file" id="imageUpload">
+    <video id="videoInput" width="720" height="720" autoplay muted></video>
 </body>
 </html>
