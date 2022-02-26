@@ -48,14 +48,14 @@ async function start () {
 
 function loadLabeledImages() {
 	//labels for images. These need to correspond with the folder names where the training images are stored.
-	const labels = ['Coen', 'Daan'];
+	const labels = ['Benedict_Cumberbatch', 'Chris_Hemsworth', 'Jennifer_Lawrence', 'RDJ', 'Sigourney_Weaver'];
 
 	return Promise.all(
 		//map labels and match with corresponding descriptors.
 		labels.map(async label => {
 			const descriptions = [];
 
-			for (let i = 1; i <= 4; i++) {
+			for (let i = 1; i <= 6; i++) {
 				//using npm live-server to host files locally.
 				const img = await faceapi.fetchImage(`http://127.0.0.1:8080/labeled_images//${label}/${i}.jpg`);
 				const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
